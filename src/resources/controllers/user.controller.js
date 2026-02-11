@@ -24,8 +24,8 @@ export const register = async (req, reply) => {
 
 export const deleteUser = async (req, reply) => {
   try {
-    const user = await deleteUserById(req.params.id);
-    return reply.send({ message: "User deleted", id: user.id });
+    await deleteUserById(req.params.id);
+    return reply.code(204).send();
   } catch (err) {
     return reply.status(400).send({ error: err.message });
   }
@@ -42,7 +42,7 @@ export const restoreUser = async (req, reply) => {
 
 export const getProfile = async (req, reply) => {
   try {
-    const user = await findUserById(req.user.id);
+    const user = await findUserById(req.user.sub);
     if (!user) throw new Error("User not found");
 
     return reply.send({ id: user.id, email: user.email });
