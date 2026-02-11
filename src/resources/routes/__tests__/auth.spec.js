@@ -1,30 +1,23 @@
-import { jest } from "@jest/globals";
 import Fastify from "fastify";
+import { jest } from "@jest/globals";
 
-// Mock completo do módulo de controllers
-const authControllerMock = {
+// Mock Controllers
+jest.mock("../../controllers/auth.controller.js", () => ({
+  __esModule: true,
   login: jest.fn().mockResolvedValue(),
   refreshToken: jest.fn().mockResolvedValue(),
   logout: jest.fn().mockResolvedValue(),
-};
+}));
 
-// Mocka o módulo ESM
-jest.unstable_mockModule("../controllers/auth.controller.js", () => authControllerMock);
-
-// Importa o módulo de rotas **depois** de aplicar o mock
-const authRoutes = (await import("./auth.routes.js")).default;
+import authRoutes from "../auth.routes.js";
+import * as authController from "../../controllers/auth.controller.js";
 
 describe("Auth Routes", () => {
   let fastify;
 
   beforeEach(async () => {
     fastify = Fastify({ logger: false });
-
-    // Limpa mocks antes de cada teste
-    authControllerMock.login.mockClear();
-    authControllerMock.refreshToken.mockClear();
-    authControllerMock.logout.mockClear();
-
+    jest.clearAllMocks();
     await authRoutes(fastify);
   });
 
@@ -38,7 +31,8 @@ describe("Auth Routes", () => {
       url: "/auth/login",
       payload: { email: "a@b.com", password: "123" },
     });
-    expect(authControllerMock.login).toHaveBeenCalled();
+
+    expect(authController.login).toHaveBeenCalled();
   });
 
   it("should register POST /auth/refresh", async () => {
@@ -46,7 +40,8 @@ describe("Auth Routes", () => {
       method: "POST",
       url: "/auth/refresh",
     });
-    expect(authControllerMock.refreshToken).toHaveBeenCalled();
+
+    expect(authController.refreshToken).toHaveBeenCalled();
   });
 
   it("should register POST /auth/logout", async () => {
@@ -54,6 +49,7 @@ describe("Auth Routes", () => {
       method: "POST",
       url: "/auth/logout",
     });
-    expect(authControllerMock.logout).toHaveBeenCalled();
+
+    expect(authController.logout).toHaveBeenCalled();
   });
 });

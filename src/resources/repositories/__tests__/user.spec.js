@@ -1,10 +1,10 @@
 import { jest } from "@jest/globals";
 
 // ----------------------
-// Mock do Prisma
+// Prisma Mock
 // ----------------------
-const prismaMock = {
-  user: {
+jest.mock("../../../lib/prisma.js", () => {
+  const user = {
     create: jest.fn(),
     findUnique: jest.fn(),
     update: jest.fn(),
@@ -12,17 +12,22 @@ const prismaMock = {
     restore: jest.fn(),
     findMany: jest.fn(),
     count: jest.fn(),
-  },
-  $transaction: jest.fn(),
-};
+  };
 
-// Sobrescreve a importação do prisma no módulo
-jest.unstable_mockModule("../../lib/prisma.js", () => ({
-  prisma: prismaMock,
-}));
+  const $transaction = jest.fn();
 
-// Importa o repository após os mocks
-const repo = await import("./user.repository.js");
+  return {
+    prisma: {
+      user,
+      $transaction,
+    },
+    __esModule: true,
+  };
+});
+
+// Imports after mock
+import { prisma } from "../../../lib/prisma.js";
+import * as repo from "../user.repository.js";
 
 // ----------------------
 // Testes
@@ -38,18 +43,18 @@ describe("User Repository", () => {
   describe("createUser", () => {
     it("should create a new user", async () => {
       const user = { id: "1", name: "John", email: "john@test.com" };
-      prismaMock.user.create.mockResolvedValue(user);
+      prisma.user.create.mockResolvedValue(user);
 
       const result = await repo.createUser({ name: "John", email: "john@test.com", password: "HASH" });
 
-      expect(prismaMock.user.create).toHaveBeenCalledWith({
+      expect(prisma.user.create).toHaveBeenCalledWith({
         data: { name: "John", email: "john@test.com", password: "HASH" },
       });
       expect(result).toEqual(user);
     });
 
     it("should throw if create fails", async () => {
-      prismaMock.user.create.mockRejectedValue(new Error("DB Error"));
+      prisma.user.create.mockRejectedValue(new Error("DB Error"));
       await expect(repo.createUser({ name: "Fail", email: "fail@test.com", password: "HASH" })).rejects.toThrow(
         "DB Error"
       );
@@ -62,22 +67,22 @@ describe("User Repository", () => {
   describe("findUserByEmail", () => {
     it("should find user by email", async () => {
       const user = { id: "1", email: "john@test.com" };
-      prismaMock.user.findUnique.mockResolvedValue(user);
+      prisma.user.findUnique.mockResolvedValue(user);
 
       const result = await repo.findUserByEmail("john@test.com");
 
-      expect(prismaMock.user.findUnique).toHaveBeenCalledWith({ where: { email: "john@test.com" } });
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { email: "john@test.com" } });
       expect(result).toEqual(user);
     });
 
     it("should return null if not found", async () => {
-      prismaMock.user.findUnique.mockResolvedValue(null);
+      prisma.user.findUnique.mockResolvedValue(null);
       const result = await repo.findUserByEmail("unknown@test.com");
       expect(result).toBeNull();
     });
 
     it("should throw if findUnique fails", async () => {
-      prismaMock.user.findUnique.mockRejectedValue(new Error("DB Error"));
+      prisma.user.findUnique.mockRejectedValue(new Error("DB Error"));
       await expect(repo.findUserByEmail("error@test.com")).rejects.toThrow("DB Error");
     });
   });
@@ -88,22 +93,22 @@ describe("User Repository", () => {
   describe("findUserById", () => {
     it("should find user by id", async () => {
       const user = { id: "1" };
-      prismaMock.user.findUnique.mockResolvedValue(user);
+      prisma.user.findUnique.mockResolvedValue(user);
 
       const result = await repo.findUserById("1");
 
-      expect(prismaMock.user.findUnique).toHaveBeenCalledWith({ where: { id: "1" } });
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { id: "1" } });
       expect(result).toEqual(user);
     });
 
     it("should return null if not found", async () => {
-      prismaMock.user.findUnique.mockResolvedValue(null);
+      prisma.user.findUnique.mockResolvedValue(null);
       const result = await repo.findUserById("2");
       expect(result).toBeNull();
     });
 
     it("should throw if findUnique fails", async () => {
-      prismaMock.user.findUnique.mockRejectedValue(new Error("DB Error"));
+      prisma.user.findUnique.mockRejectedValue(new Error("DB Error"));
       await expect(repo.findUserById("error")).rejects.toThrow("DB Error");
     });
   });
@@ -114,11 +119,11 @@ describe("User Repository", () => {
   describe("updateUserById", () => {
     it("should update user by id", async () => {
       const updatedUser = { id: "1", name: "John Updated", email: "john2@test.com" };
-      prismaMock.user.update.mockResolvedValue(updatedUser);
+      prisma.user.update.mockResolvedValue(updatedUser);
 
       const result = await repo.updateUserById("1", { name: "John Updated", email: "john2@test.com" });
 
-      expect(prismaMock.user.update).toHaveBeenCalledWith({
+      expect(prisma.user.update).toHaveBeenCalledWith({
         where: { id: "1" },
         data: { name: "John Updated", email: "john2@test.com" },
         select: { id: true, name: true, email: true, createdAt: true, updatedAt: true },
@@ -127,7 +132,7 @@ describe("User Repository", () => {
     });
 
     it("should throw if update fails", async () => {
-      prismaMock.user.update.mockRejectedValue(new Error("DB Error"));
+      prisma.user.update.mockRejectedValue(new Error("DB Error"));
       await expect(repo.updateUserById("1", {})).rejects.toThrow("DB Error");
     });
   });
@@ -138,22 +143,22 @@ describe("User Repository", () => {
   describe("deleteUserById", () => {
     it("should soft delete user", async () => {
       const deleted = { id: "1" };
-      prismaMock.user.softDelete.mockResolvedValue(deleted);
+      prisma.user.softDelete.mockResolvedValue(deleted);
 
       const result = await repo.deleteUserById("1");
 
-      expect(prismaMock.user.softDelete).toHaveBeenCalledWith({ where: { id: "1" } });
+      expect(prisma.user.softDelete).toHaveBeenCalledWith({ where: { id: "1" } });
       expect(result).toEqual(deleted);
     });
 
     it("should return null if nothing deleted", async () => {
-      prismaMock.user.softDelete.mockResolvedValue(null);
+      prisma.user.softDelete.mockResolvedValue(null);
       const result = await repo.deleteUserById("2");
       expect(result).toBeNull();
     });
 
     it("should throw if softDelete fails", async () => {
-      prismaMock.user.softDelete.mockRejectedValue(new Error("DB Error"));
+      prisma.user.softDelete.mockRejectedValue(new Error("DB Error"));
       await expect(repo.deleteUserById("error")).rejects.toThrow("DB Error");
     });
   });
@@ -164,22 +169,22 @@ describe("User Repository", () => {
   describe("restoreUserById", () => {
     it("should restore user", async () => {
       const restored = { id: "1" };
-      prismaMock.user.restore.mockResolvedValue(restored);
+      prisma.user.restore.mockResolvedValue(restored);
 
       const result = await repo.restoreUserById("1");
 
-      expect(prismaMock.user.restore).toHaveBeenCalledWith({ where: { id: "1" } });
+      expect(prisma.user.restore).toHaveBeenCalledWith({ where: { id: "1" } });
       expect(result).toEqual(restored);
     });
 
     it("should return null if nothing restored", async () => {
-      prismaMock.user.restore.mockResolvedValue(null);
+      prisma.user.restore.mockResolvedValue(null);
       const result = await repo.restoreUserById("2");
       expect(result).toBeNull();
     });
 
     it("should throw if restore fails", async () => {
-      prismaMock.user.restore.mockRejectedValue(new Error("DB Error"));
+      prisma.user.restore.mockRejectedValue(new Error("DB Error"));
       await expect(repo.restoreUserById("error")).rejects.toThrow("DB Error");
     });
   });
@@ -190,19 +195,19 @@ describe("User Repository", () => {
   describe("fetchUsers", () => {
     it("should return paginated users without search", async () => {
       const users = [{ id: "1", name: "John", email: "john@test.com" }];
-      prismaMock.$transaction.mockResolvedValue([users, 1]);
+      prisma.$transaction.mockResolvedValue([users, 1]);
 
       const result = await repo.fetchUsers({ page: 1, perPage: 10 });
 
-      expect(prismaMock.$transaction).toHaveBeenCalledWith([
-        prismaMock.user.findMany({
+      expect(prisma.$transaction).toHaveBeenCalledWith([
+        prisma.user.findMany({
           where: {},
           select: { id: true, name: true, email: true, createdAt: true },
           orderBy: { createdAt: "desc" },
           skip: 0,
           take: 10,
         }),
-        prismaMock.user.count({ where: {} }),
+        prisma.user.count({ where: {} }),
       ]);
 
       expect(result).toEqual({
@@ -220,12 +225,12 @@ describe("User Repository", () => {
 
     it("should return paginated users with search", async () => {
       const users = [{ id: "1", name: "John", email: "john@test.com" }];
-      prismaMock.$transaction.mockResolvedValue([users, 1]);
+      prisma.$transaction.mockResolvedValue([users, 1]);
 
       const result = await repo.fetchUsers({ page: 1, perPage: 10, search: "John" });
 
-      expect(prismaMock.$transaction).toHaveBeenCalledWith([
-        prismaMock.user.findMany({
+      expect(prisma.$transaction).toHaveBeenCalledWith([
+        prisma.user.findMany({
           where: {
             OR: [
               { email: { contains: "John", mode: "insensitive" } },
@@ -237,7 +242,7 @@ describe("User Repository", () => {
           skip: 0,
           take: 10,
         }),
-        prismaMock.user.count({
+        prisma.user.count({
           where: {
             OR: [
               { email: { contains: "John", mode: "insensitive" } },
@@ -251,7 +256,7 @@ describe("User Repository", () => {
     });
 
     it("should return empty paginated users without search", async () => {
-      prismaMock.$transaction.mockResolvedValue([[], 0]);
+      prisma.$transaction.mockResolvedValue([[], 0]);
 
       const result = await repo.fetchUsers({ page: 1, perPage: 10 });
 
@@ -269,7 +274,7 @@ describe("User Repository", () => {
     });
 
     it("should throw if $transaction fails", async () => {
-      prismaMock.$transaction.mockRejectedValue(new Error("DB Error"));
+      prisma.$transaction.mockRejectedValue(new Error("DB Error"));
       await expect(repo.fetchUsers({ page: 1, perPage: 10 })).rejects.toThrow("DB Error");
     });
   });

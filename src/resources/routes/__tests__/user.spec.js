@@ -1,6 +1,6 @@
 import { jest } from "@jest/globals";
 import Fastify from "fastify";
-import userRoutes from "./user.routes.js";
+import userRoutes from "../user.routes.js";
 
 describe("User Routes", () => {
   let fastify;

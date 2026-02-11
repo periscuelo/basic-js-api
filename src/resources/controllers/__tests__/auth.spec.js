@@ -1,41 +1,45 @@
 import { jest } from "@jest/globals";
 
 // ----------------------
-// Mocks de Módulos ESM
+// Mocks
 // ----------------------
-const userRepoMock = {
+jest.mock("../../repositories/user.repository.js", () => ({
   findUserByEmail: jest.fn(),
-};
-jest.unstable_mockModule("../repositories/user.repository.js", () => userRepoMock);
+}));
 
-const tokenRepoMock = {
+jest.mock("../../repositories/refresh-token.repository.js", () => ({
   createRefreshToken: jest.fn(),
   findRefreshToken: jest.fn(),
   deleteRefreshToken: jest.fn(),
-};
-jest.unstable_mockModule("../repositories/refresh-token.repository.js", () => tokenRepoMock);
+}));
 
-const cryptoMock = {
+jest.mock("node:crypto", () => ({
   randomUUID: jest.fn(() => "REFRESH_TOKEN"),
-};
-jest.unstable_mockModule("node:crypto", () => cryptoMock);
+}));
 
-const argon2Mock = {
+jest.mock("argon2", () => ({
   verify: jest.fn(),
-};
-jest.unstable_mockModule("argon2", () => argon2Mock);
+}));
 
 // ----------------------
-// Import dos Módulos Reais Após os Mocks
+//  Import modules after applying mocks to ensure controller uses mocked dependencies
 // ----------------------
-const userRepo = await import("../repositories/user.repository.js");
-const tokenRepo = await import("../repositories/refresh-token.repository.js");
-const crypto = await import("node:crypto");
-const argon2 = await import("argon2");
-const authController = await import("./auth.controller.js");
+let userRepo;
+let tokenRepo;
+let crypto;
+let argon2;
+let authController;
+
+beforeAll(async () => {
+  userRepo = await import("../../repositories/user.repository.js");
+  tokenRepo = await import("../../repositories/refresh-token.repository.js");
+  crypto = await import("node:crypto");
+  argon2 = await import("argon2");
+  authController = await import("../auth.controller.js");
+});
 
 // ----------------------
-// Setup Teste
+// Setup Test
 // ----------------------
 describe("Auth Controller", () => {
   let req;
@@ -67,7 +71,7 @@ describe("Auth Controller", () => {
   // ----------------------
   describe("login", () => {
     it("should return 401 if user not found", async () => {
-      userRepoMock.findUserByEmail.mockResolvedValue(null);
+      userRepo.findUserByEmail.mockResolvedValue(null);
       req.body = { email: "test@test.com", password: "pass" };
 
       await authController.login(req, reply);
@@ -77,8 +81,8 @@ describe("Auth Controller", () => {
     });
 
     it("should return 401 if password is invalid", async () => {
-      userRepoMock.findUserByEmail.mockResolvedValue({ id: "1", email: "test@test.com", password: "hash" });
-      argon2Mock.verify.mockResolvedValue(false);
+      userRepo.findUserByEmail.mockResolvedValue({ id: "1", email: "test@test.com", password: "hash" });
+      argon2.verify.mockResolvedValue(false);
       req.body = { email: "test@test.com", password: "wrong" };
 
       await authController.login(req, reply);
@@ -89,9 +93,9 @@ describe("Auth Controller", () => {
 
     it("should create refresh token and return access token", async () => {
       const user = { id: "1", email: "test@test.com", password: "hash" };
-      userRepoMock.findUserByEmail.mockResolvedValue(user);
-      argon2Mock.verify.mockResolvedValue(true);
-      cryptoMock.randomUUID.mockReturnValue("REFRESH_TOKEN");
+      userRepo.findUserByEmail.mockResolvedValue(user);
+      argon2.verify.mockResolvedValue(true);
+      crypto.randomUUID.mockReturnValue("REFRESH_TOKEN");
 
       req.body = { email: "test@test.com", password: "pass" };
       await authController.login(req, reply);
@@ -101,7 +105,7 @@ describe("Auth Controller", () => {
         { expiresIn: process.env.JWT_ACCESS_EXPIRES_IN }
       );
 
-      expect(tokenRepoMock.createRefreshToken).toHaveBeenCalledWith(expect.objectContaining({
+      expect(tokenRepo.createRefreshToken).toHaveBeenCalledWith(expect.objectContaining({
         token: "REFRESH_TOKEN",
         userId: "1",
         userAgent: null,
@@ -118,7 +122,7 @@ describe("Auth Controller", () => {
     });
 
     it("should handle errors with 500", async () => {
-      userRepoMock.findUserByEmail.mockRejectedValue(new Error("DB Error"));
+      userRepo.findUserByEmail.mockRejectedValue(new Error("DB Error"));
       req.body = { email: "test@test.com", password: "pass" };
 
       await authController.login(req, reply);
@@ -143,7 +147,7 @@ describe("Auth Controller", () => {
 
     it("should return 401 if token not found", async () => {
       req.cookies = { refreshToken: "XYZ" };
-      tokenRepoMock.findRefreshToken.mockResolvedValue(null);
+      tokenRepo.findRefreshToken.mockResolvedValue(null);
 
       await authController.refreshToken(req, reply);
 
@@ -154,12 +158,12 @@ describe("Auth Controller", () => {
     it("should return 401 if token expired", async () => {
       req.cookies = { refreshToken: "XYZ" };
       const pastDate = new Date(Date.now() - 1000);
-      tokenRepoMock.findRefreshToken.mockResolvedValue({ token: "XYZ", userId: "1", expiresAt: pastDate });
-      tokenRepoMock.deleteRefreshToken.mockResolvedValue();
+      tokenRepo.findRefreshToken.mockResolvedValue({ token: "XYZ", userId: "1", expiresAt: pastDate });
+      tokenRepo.deleteRefreshToken.mockResolvedValue();
 
       await authController.refreshToken(req, reply);
 
-      expect(tokenRepoMock.deleteRefreshToken).toHaveBeenCalledWith("XYZ");
+      expect(tokenRepo.deleteRefreshToken).toHaveBeenCalledWith("XYZ");
       expect(reply.clearCookie).toHaveBeenCalledWith("refreshToken", expect.any(Object));
       expect(reply.status).toHaveBeenCalledWith(401);
       expect(reply.send).toHaveBeenCalledWith({ error: "Refresh token expired" });
@@ -168,15 +172,15 @@ describe("Auth Controller", () => {
     it("should rotate token and return new access token", async () => {
       req.cookies = { refreshToken: "OLD_TOKEN" };
       const futureDate = new Date(Date.now() + 1000 * 60);
-      tokenRepoMock.findRefreshToken.mockResolvedValue({ userId: "1", expiresAt: futureDate });
-      tokenRepoMock.deleteRefreshToken.mockResolvedValue();
-      tokenRepoMock.createRefreshToken.mockResolvedValue();
-      cryptoMock.randomUUID.mockReturnValue("NEW_TOKEN");
+      tokenRepo.findRefreshToken.mockResolvedValue({ userId: "1", expiresAt: futureDate });
+      tokenRepo.deleteRefreshToken.mockResolvedValue();
+      tokenRepo.createRefreshToken.mockResolvedValue();
+      crypto.randomUUID.mockReturnValue("NEW_TOKEN");
 
       await authController.refreshToken(req, reply);
 
-      expect(tokenRepoMock.deleteRefreshToken).toHaveBeenCalledWith("OLD_TOKEN");
-      expect(tokenRepoMock.createRefreshToken).toHaveBeenCalledWith(expect.objectContaining({
+      expect(tokenRepo.deleteRefreshToken).toHaveBeenCalledWith("OLD_TOKEN");
+      expect(tokenRepo.createRefreshToken).toHaveBeenCalledWith(expect.objectContaining({
         token: "NEW_TOKEN",
         userId: "1",
       }));
@@ -191,11 +195,11 @@ describe("Auth Controller", () => {
   describe("logout", () => {
     it("should delete refresh token if exists", async () => {
       req.cookies = { refreshToken: "XYZ" };
-      tokenRepoMock.deleteRefreshToken.mockResolvedValue();
+      tokenRepo.deleteRefreshToken.mockResolvedValue();
 
       await authController.logout(req, reply);
 
-      expect(tokenRepoMock.deleteRefreshToken).toHaveBeenCalledWith("XYZ");
+      expect(tokenRepo.deleteRefreshToken).toHaveBeenCalledWith("XYZ");
       expect(reply.clearCookie).toHaveBeenCalledWith("refreshToken", expect.any(Object));
       expect(reply.status).toHaveBeenCalledWith(204);
       expect(reply.send).toHaveBeenCalled();
@@ -206,7 +210,7 @@ describe("Auth Controller", () => {
 
       await authController.logout(req, reply);
 
-      expect(tokenRepoMock.deleteRefreshToken).not.toHaveBeenCalled();
+      expect(tokenRepo.deleteRefreshToken).not.toHaveBeenCalled();
       expect(reply.clearCookie).toHaveBeenCalledWith("refreshToken", expect.any(Object));
       expect(reply.status).toHaveBeenCalledWith(204);
       expect(reply.send).toHaveBeenCalled();
