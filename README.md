@@ -38,11 +38,15 @@ After installation, the `postinstall` command will automatically generate the Pr
 | `pnpm dev`             | Starts the server in development mode with watch.                        |
 | `pnpm start`           | Starts the server in production mode using the build from `dist`.        |
 | `pnpm build`           | Obfuscates the application code for production.                          |
-| `pnpm prisma:migrate`  | Runs database migrations in the development environment.                 |
+| `pnpm prisma:deploy`   | Apply database migrations in the development environment.                |
 | `pnpm prisma:generate` | Generates the Prisma client.                                             |
+| `pnpm prisma:migrate`  | Create database migrations in the development environment.               |
 | `pnpm prisma:push`     | Updates the database with the Prisma schema without creating migrations. |
+| `pnpm prisma:reset`    | Erase all in database allowing execute migrations again.                 |
+| `pnpm prisma:seed`     | Seed your data into the database using prisma for that.                  |
 | `pnpm test`            | Runs tests using Jest.                                                   |
 | `pnpm test:watch`      | Runs tests in watch mode.                                                |
+| `pnpm test:e2e`        | Runs e2e tests, needs test database running in docker.                   |
 
 > 💡 All Prisma commands use `.env.development` by default, while `start` uses `.env.production`.
 
@@ -86,6 +90,9 @@ pnpm test
 
 # Run tests in watch mode
 pnpm test:watch
+
+# Run e2e tests (needs test database running, using .env.test and .env.docker)
+pnpm test:e2e
 ```
 
 ---
@@ -118,17 +125,22 @@ basic-js-api/
 │  │  ├─ routes/
 │  │  └─ schemas/
 │  │
+│  ├─ app.js
+│  ├─ env.js
 │  └─ server.js
 │
 ├─ scripts/
 │  └─ obfuscate.js
 │
 ├─ prisma/
+│  ├─ seed.js
 │  ├─ schema.prisma
 │  └─ migrations/
 │
 ├─ .env.development
 ├─ .env.production
+├─ .env.test
+├─ .env.docker
 ├─ package.json
 └─ README.md
 ```
