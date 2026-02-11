@@ -7,12 +7,16 @@
     "dev": "node --watch src/server.js",
     "build": "node scripts/obfuscate.js",
     "postinstall": "pnpm run prisma:generate",
-    "prisma:migrate": "dotenv -e .env.development -- pnpm exec prisma migrate",
+    "prisma:deploy": "dotenv -e .env.development -- pnpm exec prisma migrate deploy",
     "prisma:generate": "dotenv -e .env.development -- pnpm exec prisma generate",
+    "prisma:migrate": "dotenv -e .env.development -- pnpm exec prisma migrate dev --name",
     "prisma:push": "dotenv -e .env.development -- pnpm exec prisma db push",
+    "prisma:reset": "dotenv -e .env.development -- pnpm exec prisma migrate reset",
+    "prisma:seed": "dotenv -e .env.development -- node prisma/seed.js",
     "start": "dotenv -e .env.production -- node dist/server.js",
-    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.config.js",
-    "test:watch": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.config.js --watch"
+    "test": "jest --config jest.config.js",
+    "test:watch": "jest --config jest.config.js --watch",
+    "test:e2e": "jest --config jest.config.e2e.js --runInBand --detectOpenHandles"
   },
   "engines": {
     "node": ">=24.0.0",
@@ -34,6 +38,9 @@
     "prisma": "^7.3.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.29.0",
+    "@babel/preset-env": "^7.29.0",
+    "babel-jest": "^30.2.0",
     "dotenv-cli": "^11.0.0",
     "javascript-obfuscator": "^5.1.0",
     "jest": "^30.2.0",

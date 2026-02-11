@@ -1,13 +1,16 @@
 export default {
   roots: ["<rootDir>/src/resources"],
   testMatch: ["**/?(*.)+(spec|test).js"],
-  transform: {},
-  moduleFileExtensions: ["js", "json"],
+  testPathIgnorePatterns: [String.raw`\.e2e\.spec\.js$`],
+  transform: {
+    "^.+\\.js$": "babel-jest",
+  },
+  testEnvironment: "node",
   collectCoverage: true,
   collectCoverageFrom: ["src/resources/**/*.js"],
   coverageDirectory: "coverage",
-  testEnvironment: "node",
   coveragePathIgnorePatterns: [
-    String.raw`/routes/index\.js$`
+    "/routes/",
+    String.raw`\.e2e\.spec\.js$`
   ]
 };

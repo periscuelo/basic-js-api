@@ -1,4 +1,30 @@
 services:
+  db-test:
+    image: postgres:17
+    restart: always
+    env_file:
+      - .env.test
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata_test:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  migrate-test:
+    build: .
+    image: basic-js-api:latest
+    depends_on:
+      db-test:
+        condition: service_healthy
+    env_file:
+      - .env.docker
+    command: ["pnpm", "exec", "prisma", "migrate", "deploy"]
+    pull_policy: "never"
+
   db-dev:
     image: postgres:17
     restart: always
@@ -18,16 +44,25 @@ services:
       - "5435:5432"
     volumes:
       - pgdata_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
 
   api:
     build: .
+    image: basic-js-api:latest
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     env_file:
       - .env.production
     ports:
       - "3000:3000"
+    pull_policy: "never"
 
 volumes:
+  pgdata_test:
   pgdata_dev:
   pgdata_prod:
