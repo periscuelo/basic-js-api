@@ -1,11 +1,8 @@
-import { readdir } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { readdir } from "node:fs/promises";
+import { pathToFileURL } from "node:url";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const registerRoutes = async (fastify, dir = __dirname) => {
+const registerRoutes = async (fastify, dir) => {
   const entries = await readdir(dir, { withFileTypes: true });
 
   const sortedEntries = entries.toSorted((a, b) =>
@@ -27,7 +24,7 @@ const registerRoutes = async (fastify, dir = __dirname) => {
 
     const register = mod.default ?? mod;
     if (typeof register !== "function") {
-      throw new Error(`Arquivo ${entry.name} não exporta função padrão`);
+      throw new TypeError(`Arquivo ${entry.name} não exporta função padrão`);
     }
 
     await register(fastify);

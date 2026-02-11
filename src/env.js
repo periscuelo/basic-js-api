@@ -8,4 +8,4 @@ const envFileMap = {
 
 const envFile = envFileMap[process.env.NODE_ENV] || ".env.development";
 
-dotenv.config({ path: envFile });
+dotenv.config({ path: envFile, quiet: true });

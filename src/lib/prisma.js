@@ -1,7 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import {
-  filterSoftDeleted,
   restore,
   restoreMany,
   softDelete,
@@ -13,7 +12,6 @@ const adapter = new PrismaPg({
 })
 
 export const prisma = new PrismaClient({ adapter })
-  .$extends(filterSoftDeleted)
   .$extends(restore)
   .$extends(restoreMany)
   .$extends(softDelete)
