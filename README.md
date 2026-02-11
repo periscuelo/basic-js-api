@@ -63,17 +63,17 @@ The application uses **Prisma** as an ORM to connect to **PostgreSQL**, with **s
 Make sure to create your database and configure the environment variables:
 
 ```env
-# .env.docker
-DATABASE_URL="postgresql://user:password@db-test:5432/mydb_test"
-
-# .env.test
-DATABASE_URL="postgresql://user:password@localhost:5434/mydb_test"
-
 # .env.development
 DATABASE_URL="postgresql://user:password@localhost:5433/mydb_dev"
 
+# .env.docker
+DATABASE_URL="postgresql://user:password@db-test:5432/mydb_test"
+
 # .env.production
 DATABASE_URL="postgresql://user:password@localhost:5432/mydb_prod"
+
+# .env.test
+DATABASE_URL="postgresql://user:password@localhost:5434/mydb_test"
 ```
 
 To automatically create tables from the Prisma schema:
@@ -144,9 +144,9 @@ basic-js-api/
 │  └─ migrations/
 │
 ├─ .env.development
+├─ .env.docker
 ├─ .env.production
 ├─ .env.test
-├─ .env.docker
 ├─ package.json
 └─ README.md
 ```
