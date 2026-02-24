@@ -101,6 +101,35 @@ pnpm test:watch
 pnpm test:e2e
 ```
 
+## 🔒 HTTPS
+
+Install mkcert to creat certifies
+
+```bash
+# Windows
+choco install mkcert
+
+# macOS
+brew install mkcert
+
+# Linux
+sudo apt install libnss3-tools
+```
+
+Install the certification manager
+
+```bash
+mkcert -install
+```
+
+Generate .pem files and paste on certs folder
+
+```bash
+mkcert localhost 127.0.0.1 ::1
+```
+
+Uncomment https code on app.js file, save and run the project
+
 ---
 
 ## 📄 API Documentation

@@ -1,3 +1,4 @@
+// import { readFile } from "node:fs/promises";
 import path from "node:path";
 import Fastify from "fastify";
 import swagger from "@fastify/swagger";
@@ -9,9 +10,16 @@ import registerRoutes from "./resources/routes/index.js";
 import "./env.js";
 
 export async function buildApp() {
+  /* const CERT_DIR = path.resolve(process.cwd(), "certs");
+  const [key, cert] = await Promise.all([
+    readFile(path.join(CERT_DIR, "localhost-key.pem")),
+    readFile(path.join(CERT_DIR, "localhost.pem")),
+  ]); */
+
   const isTest = process.env.NODE_ENV === "test";
   const fastify = Fastify({
-    logger: !isTest,
+    // https: { key, cert },
+    logger: !isTest
   });
 
   if (!process.env.JWT_SECRET) {
