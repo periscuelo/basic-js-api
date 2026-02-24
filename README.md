@@ -159,7 +159,7 @@ basic-js-api/
 
 * Node.js >= 24
 * pnpm >= 10.15 < 11
-* PostgreSQL >= 17
+* PostgreSQL >= 18
 
 ---
 
