@@ -7,7 +7,7 @@ services:
     ports:
       - "5434:5432"
     volumes:
-      - pgdata_test:/var/lib/postgresql/data
+      - pgdata_test:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
       interval: 2s
@@ -33,7 +33,7 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - pgdata_dev:/var/lib/postgresql/data
+      - pgdata_dev:/var/lib/postgresql
 
   db:
     image: postgres:18
@@ -43,7 +43,7 @@ services:
     ports:
       - "5435:5432"
     volumes:
-      - pgdata_prod:/var/lib/postgresql/data
+      - pgdata_prod:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
       interval: 2s
